@@ -43,9 +43,9 @@ struct GNSSInfo_t {
     int   GPS_SVs = 0;                // GPS satellite visible numbers
     int   GLONASS_SVs = 0;            // GLONASS satellite visible numbers
     int   BEIDOU_SVs = 0;             // BEIDOU satellite visible numbers
-    float lat = 0.0;                  // Latitude of current position. Output format is dd.ddddd
+    char  lat[16] = "";                  // Latitude of current position. Output format is dd.ddddd
     char  NS = '0';                   // N/S Indicator, N=north or S=south.
-    float lon = 0.0;                  // Longitude of current position. Output format is ddd.ddddd 
+    char  lon[16] = "";                  // Longitude of current position. Output format is ddd.ddddd 
     char  EW = '0';                   // E/W Indicator, E=east or W=west.
     char  date[7] = "000000";         // Date. Output format is ddmmyy.
     char  UTC_TIME[10] = "000000.00"; // UTC Time. Output format is hhmmss.ss.
@@ -279,47 +279,161 @@ class GNSSCommands {
         @param [OUT] info A GNSSInfo_t structure.
         @return A76XX_OPERATION_SUCCEEDED, A76XX_OPERATION_TIMEDOUT or A76XX_GENERIC_ERROR.
     */
-    int8_t getGNSSInfo(GNSSInfo_t& info) {
-        _serial.sendCMD("AT+CGNSSINFO");
-        switch (_serial.waitResponse("+CGNSSINFO:", 9000, false, true)) {
-            case Response_t::A76XX_RESPONSE_MATCH_1ST : {
-                // when we do not have a fix there is a space
-                if (_serial.peek() == ' ') { 
-                    info.hasfix = false;
+int8_t getGNSSInfo(GNSSInfo_t& info) {
+    _serial.sendCMD("AT+CGNSSINFO");
+    switch (_serial.waitResponse("+CGNSSINFO:", 9000, false, true)) {
+        case Response_t::A76XX_RESPONSE_MATCH_1ST : {
+            while (_serial.peek() == ' ') {
+                _serial.read();
+            }
+            if (_serial.peek() == ',') { 
+                info.hasfix = false;
+                while(_serial.peek() != '\n' && _serial.peek() != -1) _serial.read();
+            } else {
+                info.hasfix = true;
+                
+                if(_serial.peek() == ',') {
+                    _serial.read();
+                    info.mode = 0;
                 } else {
-                    info.hasfix = true;
-                    info.mode        = _serial.parseInt();   _serial.find(',');
-                    info.GPS_SVs     = _serial.parseInt();   _serial.find(',');
-                    info.GLONASS_SVs = _serial.parseInt();   _serial.find(',');
-                    info.BEIDOU_SVs  = _serial.parseInt();   _serial.find(',');
-                    info.lat         = _serial.parseFloat(); _serial.find(',');
-                    info.NS          = _serial.read();       _serial.find(',');
-                    info.lon         = _serial.parseFloat(); _serial.find(',');
-                    info.EW          = _serial.read();       _serial.find(',');
-                    _serial.readBytes(info.date, 6);         _serial.find(',');
-                    _serial.readBytes(info.UTC_TIME, 9);     _serial.find(',');
-                    info.alt         = _serial.parseFloat(); _serial.find(',');
-                    info.speed       = _serial.parseFloat(); _serial.find(',');
-                    info.course      = _serial.parseFloat(); _serial.find(',');
-                    info.PDOP        = _serial.parseFloat(); _serial.find(',');
-                    info.HDOP        = _serial.parseFloat(); _serial.find(',');
-                    info.VDOP        = _serial.parseFloat();
+                    info.mode = _serial.parseInt();
                 }
-                // get last OK in any case
-                if (_serial.waitResponse(9000) == Response_t::A76XX_RESPONSE_OK) {
-                    return A76XX_OPERATION_SUCCEEDED;
+                _serial.find(',');
+                
+                if(_serial.peek() == ',') {
+                    _serial.read();
+                    info.GPS_SVs = 0;
                 } else {
-                    return A76XX_GENERIC_ERROR;
+                    info.GPS_SVs = _serial.parseInt();
+                }
+                _serial.find(',');
+                
+                if(_serial.peek() == ',') {
+                    _serial.read();
+                    info.GLONASS_SVs = 0;
+                } else {
+                    info.GLONASS_SVs = _serial.parseInt();
+                }
+                _serial.find(',');
+                
+                if(_serial.peek() == ',') {
+                    _serial.read();
+                    info.BEIDOU_SVs = 0;
+                } else {
+                    info.BEIDOU_SVs = _serial.parseInt();
+                }
+                _serial.find(',');
+                
+                if(_serial.peek() == ',') {
+                    _serial.read();
+                } else {
+                    String latStr = _serial.readStringUntil(',');
+                    latStr.toCharArray(info.lat, sizeof(info.lat));
+                }
+                _serial.find(',');
+
+                if(_serial.peek() == ',') {
+                    _serial.read();
+                    info.NS = ' ';
+                } else {
+                    info.NS = _serial.read();
+                }
+                _serial.find(',');
+                
+                if(_serial.peek() == ',') {
+                    _serial.read();
+                } else {
+                    String lonStr = _serial.readStringUntil(',');
+                    lonStr.toCharArray(info.lon, sizeof(info.lon));
+                }
+                _serial.find(',');
+
+                if(_serial.peek() == ',') {
+                    _serial.read();
+                    info.EW = ' ';
+                } else {
+                    info.EW = _serial.read();
+                }
+                _serial.find(',');
+                
+                if(_serial.peek() == ',') {
+                    _serial.read();
+                    memset(info.date, '0', 6);
+                } else {
+                    _serial.readBytes(info.date, 6);
+                }
+                _serial.find(',');
+                
+                if(_serial.peek() == ',') {
+                    _serial.read();
+                    memset(info.UTC_TIME, '0', 9);
+                } else {
+                    _serial.readBytes(info.UTC_TIME, 9);
+                }
+                _serial.find(',');
+                
+                if(_serial.peek() == ',') {
+                    _serial.read();
+                    info.alt = 0.0;
+                } else {
+                    info.alt = _serial.parseFloat();
+                }
+                _serial.find(',');
+                
+                if(_serial.peek() == ',') {
+                    _serial.read();
+                    info.speed = 0.0;
+                } else {
+                    info.speed = _serial.parseFloat();
+                }
+                _serial.find(',');
+                
+                if(_serial.peek() == ',') {
+                    _serial.read();
+                    info.course = 0.0;
+                } else {
+                    info.course = _serial.parseFloat();
+                }
+                _serial.find(',');
+                
+                if(_serial.peek() == ',') {
+                    _serial.read();
+                    info.PDOP = 0.0;
+                } else {
+                    info.PDOP = _serial.parseFloat();
+                }
+                _serial.find(',');
+                
+                if(_serial.peek() == ',') {
+                    _serial.read();
+                    info.HDOP = 0.0;
+                } else {
+                    info.HDOP = _serial.parseFloat();
+                }
+                _serial.find(',');
+                
+                if(_serial.peek() == ',') {
+                    _serial.read();
+                    info.VDOP = 0.0;
+                } else {
+                    info.VDOP = _serial.parseFloat();
                 }
             }
-            case Response_t::A76XX_RESPONSE_TIMEOUT : {
-                return A76XX_OPERATION_TIMEDOUT;
-            }
-            default : {
+
+            if (_serial.waitResponse(9000) == Response_t::A76XX_RESPONSE_OK) {
+                return A76XX_OPERATION_SUCCEEDED;
+            } else {
                 return A76XX_GENERIC_ERROR;
             }
         }
+        case Response_t::A76XX_RESPONSE_TIMEOUT : {
+            return A76XX_OPERATION_TIMEDOUT;
+        }
+        default : {
+            return A76XX_GENERIC_ERROR;
+        }
     }
+}
 
     /*
         @brief Implementation for CGPSSINFO - Write Command.
@@ -331,8 +445,11 @@ class GNSSCommands {
         _serial.sendCMD("AT+CGPSINFO");
         switch (_serial.waitResponse("+CGPSINFO:", 9000, false, true)) {
             case Response_t::A76XX_RESPONSE_MATCH_1ST : {
+                while (_serial.peek() == ' ') {
+                    _serial.read();
+                }
                 // when we do not have a fix there should be an empty space after the :
-                if (_serial.peek() == ' ') { 
+                if (_serial.peek() == ',') { 
                     info.hasfix = false;
                 } else {
                     info.hasfix = true;

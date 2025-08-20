@@ -291,6 +291,36 @@ class ModemSerial {
         return _stream.parseFloat(); 
     }
 
+/**
+ * Читает данные из потока до указанного разделителя
+ * @param delimiter Разделитель
+ * @return Указатель на буфер с результатом (или nullptr при ошибке)
+ */
+char* readStringUntil(char delimiter) {
+    static char buffer[16];
+    size_t i = 0;
+    
+    memset(buffer, 0, sizeof(buffer));
+    
+    while (i < sizeof(buffer) - 1) {
+        if (!_stream.available()) {
+            delay(1); 
+            continue;
+        }
+        
+        char c = _stream.peek();
+        
+        if (c == delimiter || c == '\r' || c == '\n') {
+            break;
+        }
+        
+        buffer[i++] = _stream.read();
+    }
+    
+    buffer[i] = '\0';
+    return buffer;
+}
+
     void flush() { 
         _stream.flush(); 
     }
