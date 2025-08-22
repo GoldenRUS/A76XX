@@ -297,7 +297,7 @@ class ModemSerial {
  * @return Указатель на буфер с результатом (или nullptr при ошибке)
  */
 char* readStringUntil(char delimiter) {
-    static char buffer[16];
+    static char buffer[32];
     size_t i = 0;
     
     memset(buffer, 0, sizeof(buffer));

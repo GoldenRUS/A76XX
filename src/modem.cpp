@@ -9,7 +9,8 @@ A76XX::A76XX(Stream& stream)
     , serialInterface(serial)
     , sim(serial)
     , statusControl(serial)
-    , v25ter(serial) {}
+    , v25ter(serial)
+    , wifi(serial) {}
 
 int8_t A76XX::getLastError() {
     return _last_error_code;
