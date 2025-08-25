@@ -66,7 +66,7 @@ enum Response_t {
 #define A76XX_SIM_PIN_MODEM_ERROR            -7
 #define A76XX_GNSS_NOT_READY                 -8
 #define A76XX_GNSS_GENERIC_ERROR             -9
-#define A76XX_WIFI_HAS_LOST_NETWORKS         -9
+#define A76XX_WIFI_HAS_LOST_NETWORKS         -10
 
 // if retcode is an error, return it
 #define A76XX_RETCODE_ASSERT_RETURN(retcode) {        \

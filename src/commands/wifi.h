@@ -29,7 +29,7 @@ public:
 
     int8_t isShowSignal(bool &status) {
         _serial.sendCMD("AT+CWSTASCAN?");
-        Response_t rsp = _serial.waitResponse("+CWSTASCAN: ");
+        Response_t rsp = _serial.waitResponse("+CWSTASCAN: ", 5000);
         switch (rsp) {
             case Response_t::A76XX_RESPONSE_MATCH_1ST: {
                 status = _serial.parseIntClear() == 1;
@@ -52,14 +52,14 @@ public:
     template<size_t N>
     int8_t scanWifi(WifiNetwork_t(&networks)[N], size_t& found_count) {
         _serial.sendCMD("AT+CWSTASCAN");
-        Response_t rsp = _serial.waitResponse("+CWSTASCAN:");
+        Response_t rsp = _serial.waitResponse("+CWSTASCAN:", 10000);
 
         switch (rsp) {
         case Response_t::A76XX_RESPONSE_MATCH_1ST: {
             bool hasError = false;
             found_count = 0;
             char buffer[64];
-            uint32_t timeout = millis() + 1000;
+            uint32_t timeout = millis() + 10000;
 
             while (_serial.available() > 0 && found_count < N && millis() < timeout) {
 
