@@ -12,6 +12,7 @@ class A76XX {
     SIMCommands                               sim;
     StatusControlCommands           statusControl;
     V25TERCommands                         v25ter;
+    WifiCommands                             wifi;
 
     /*
         @brief Construct an instance of the modem.
